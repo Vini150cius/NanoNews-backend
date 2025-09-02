@@ -10,7 +10,6 @@ GET {{host}}/teste
 Accept: application/json
 
 ### Teste - buscar por id
-# Substitua {{id}} pelo id retornado em CREATE
 GET {{host}}/teste/{{id}}
 Accept: application/json
 
@@ -23,7 +22,6 @@ Content-Type: application/json
 }
 
 ### Teste - atualizar
-# Substitua {{id}} pelo id do recurso
 PUT {{host}}/teste/{{id}}
 Content-Type: application/json
 
@@ -32,11 +30,6 @@ Content-Type: application/json
 }
 
 ### Teste - deletar
-# Substitua {{id}} pelo id do recurso
 DELETE {{host}}/teste/{{id}}
 
 
-# Uso rápido (VS Code REST Client):
-# - Instale a extensão "REST Client"
-# - Abra este arquivo e clique em "Send Request" acima de cada bloco.
-# Dica: primeiro rode POST para obter um id, depois use-o nos requests que precisam de {{id}}.
