@@ -1,4 +1,4 @@
-import { Controller, Post, Body, BadRequestException } from "@nestjs/common";
+import { Controller, Post, Body, BadRequestException, Get } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 
 @Controller("auth")
@@ -19,10 +19,30 @@ export class AuthController {
       throw new BadRequestException("As senhas não coincidem");
     }
 
-    return this.authService.createProfile({
+    const reponse = this.authService.createProfile({
       name: data.name,
       email: data.email,
       password: data.password,
     });
+
+    if (!reponse) {
+      throw new BadRequestException("Erro ao criar o usuário");
+    }
+
+    return { message: "Usuário criado com sucesso", reponse: reponse}
+  }
+
+  @Get()
+  async getProfile( 
+    @Body() data: { email: string; password: string }) {
+    const reponse = this.authService.getProfile({
+      email: data.email,
+      password: data.password,
+    });
+    console.log(reponse);
+    if (!reponse) {
+      throw new BadRequestException("Erro ao autenticar o usuário");
+    }
+    return { message: "Usuário autenticado com sucesso", reponse: reponse}
   }
 }

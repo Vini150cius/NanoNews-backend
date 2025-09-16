@@ -19,4 +19,22 @@ export class AuthService {
     if (error) throw error;
     return user;
   }
+
+  async getProfile(data: { email: string; password: string }) {
+    const { data: user, error } =
+      await this.supabaseService.supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+    if (error) throw error;
+    console.log(user);
+    const dataUser = {
+      uuid: user.user.id,
+      email: user.user.email,
+      name: user.user.user_metadata?.displayName,
+      session: user.session,
+    };
+    console.log("banan", dataUser);
+    return dataUser;
+  }
 }
