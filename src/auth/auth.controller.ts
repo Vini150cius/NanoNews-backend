@@ -1,5 +1,11 @@
-import { Controller, Post, Body, BadRequestException, Get } from "@nestjs/common";
-import { AuthService } from "./auth.service";
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+} from "@nestjs/common";
+import type { AuthService } from "./auth.service";
 
 @Controller("auth")
 export class AuthController {
@@ -29,20 +35,18 @@ export class AuthController {
       throw new BadRequestException("Erro ao criar o usuário");
     }
 
-    return { message: "Usuário criado com sucesso", reponse: reponse}
+    return { message: "Usuário criado com sucesso", reponse };
   }
 
   @Get()
-  async getProfile( 
-    @Body() data: { email: string; password: string }) {
+  async getProfile(@Body() data: { email: string; password: string }) {
     const reponse = this.authService.getProfile({
       email: data.email,
       password: data.password,
     });
-    console.log(reponse);
     if (!reponse) {
       throw new BadRequestException("Erro ao autenticar o usuário");
     }
-    return { message: "Usuário autenticado com sucesso", reponse: reponse}
+    return { message: "Usuário autenticado com sucesso", reponse };
   }
 }

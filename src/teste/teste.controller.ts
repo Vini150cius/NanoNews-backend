@@ -1,7 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
-import { TesteService } from './teste.service';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from "@nestjs/common";
+import type { TesteService } from "./teste.service";
 
-@Controller('teste')
+@Controller("teste")
 export class TesteController {
   constructor(private readonly testeService: TesteService) {}
 
@@ -17,12 +25,14 @@ export class TesteController {
 
   @Post()
   create(@Body() body: { name: string; age: number }) {
-    console.log(body);
     return this.testeService.create(body);
   }
 
-  @Put(':id')
-  update(@Param('id') id: string, @Body() body: { name?: string; age?: number }) {
+  @Put(":id")
+  update(
+    @Param('id') id: string,
+    @Body() body: { name?: string; age?: number }
+  ) {
     return this.testeService.update(Number(id), body);
   }
 
