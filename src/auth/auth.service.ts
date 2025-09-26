@@ -1,40 +1,73 @@
-import { Injectable } from "@nestjs/common";
-import type { SupabaseService } from "../config/supabase.service";
+import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { eq } from "drizzle-orm";
+import { db } from "src/db/connection";
+import { schema } from "src/db/schema";
+import argon2 from "argon2";
+
+interface users {
+  id: string;
+  email: string;
+  password: string;
+  name: string;
+  profilePicture: string;
+  createdAt: Date;
+}
 
 @Injectable()
 export class AuthService {
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(private readonly jwtService: JwtService) {}
 
-  async createProfile(data: { name: string; email: string; password: string }) {
-    const { data: user, error } =
-      await this.supabaseService.supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            displayName: data.name,
-          },
-        },
-      });
-    if (error) throw error;
-    return user;
+  async createProfile(user: {
+    email: string;
+    name: string;
+    picture: string;
+    password: string;
+  }) {
+    const result = await db.insert(schema.users).values(user).returning();
+    return result;
   }
 
   async getProfile(data: { email: string; password: string }) {
-    const { data: user, error } =
-      await this.supabaseService.supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
-    if (error) throw error;
-    console.log(user);
-    const dataUser = {
-      uuid: user.user.id,
-      email: user.user.email,
-      name: user.user.user_metadata?.displayName,
-      session: user.session,
+    const userResult = await db
+      .select({
+        id: schema.users.id,
+        email: schema.users.email,
+        password: schema.users.password,
+        name: schema.users.name,
+        profilePicture: schema.users.profilePicture,
+        createdAt: schema.users.createdAt,
+      })
+      .from(schema.users)
+      .where(eq(schema.users.email, data.email))
+      .limit(1);
+
+    const user = userResult[0];
+    if (!user) {
+      throw new HttpException("Credenciais inválidas", HttpStatus.UNAUTHORIZED);
+    }
+
+    const isPasswordValid = await argon2.verify(user.password, data.password);
+    if (!isPasswordValid) {
+      throw new HttpException("Credenciais inválidas", HttpStatus.UNAUTHORIZED);
+    }
+
+    const { password, ...userProfile } = user;
+    return userProfile;
+  }
+
+  async validateGoogleUser(profile: any) {
+    const user = {
+      id: profile.id,
+      email: profile.emails[0].value,
+      name: profile.displayName,
+      picture: profile.photos[0].value,
     };
-    console.log("banan", dataUser);
-    return dataUser;
+
+    // Gerar token JWT
+    const payload = { sub: user.id, email: user.email };
+    const token = this.jwtService.sign(payload);
+
+    return { ...user, token };
   }
 }

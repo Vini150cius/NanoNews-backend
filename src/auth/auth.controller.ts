@@ -4,8 +4,14 @@ import {
   Controller,
   Get,
   Post,
+  Req,
+  UnauthorizedException,
+  UseGuards,
 } from "@nestjs/common";
-import type { AuthService } from "./auth.service";
+import { AuthService } from "./auth.service";
+import { AuthGuard } from "@nestjs/passport";
+import argon2 from "argon2";
+import { response } from "express";
 
 @Controller("auth")
 export class AuthController {
@@ -25,10 +31,15 @@ export class AuthController {
       throw new BadRequestException("As senhas não coincidem");
     }
 
+    const passwordHash = await argon2.hash(data.password, {
+      type: argon2.argon2id,
+    });
+
     const reponse = this.authService.createProfile({
-      name: data.name,
       email: data.email,
-      password: data.password,
+      name: data.name,
+      picture: "",
+      password: passwordHash,
     });
 
     if (!reponse) {
@@ -40,13 +51,35 @@ export class AuthController {
 
   @Get()
   async getProfile(@Body() data: { email: string; password: string }) {
-    const reponse = this.authService.getProfile({
-      email: data.email,
-      password: data.password,
-    });
-    if (!reponse) {
+    try {
+      const reponse = await this.authService.getProfile({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (!reponse) {
+        throw new BadRequestException("Erro ao autenticar o usuário");
+      }
+
+      if (response.statusCode === 401) {
+        throw new UnauthorizedException("Credenciais inválidas");
+      }
+
+      return { message: "Usuário autenticado com sucesso", reponse };
+    } catch (error) {
+      console.log(error);
       throw new BadRequestException("Erro ao autenticar o usuário");
     }
-    return { message: "Usuário autenticado com sucesso", reponse };
+  }
+
+  // Google
+  @Get("google")
+  @UseGuards(AuthGuard("google"))
+  async googleAuth() {}
+
+  @Get("google/redirect")
+  @UseGuards(AuthGuard("google"))
+  googleAuthRedirect(@Req() req) {
+    return req.user;
   }
 }

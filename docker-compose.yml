@@ -1,0 +1,11 @@
+services:
+  nano-news-pg:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: docker
+      POSTGRES_DB: nanodb
+    ports:
+      - "5432:5432"
+
