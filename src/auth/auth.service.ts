@@ -56,6 +56,15 @@ export class AuthService {
     return userProfile;
   }
 
+  async verifyEmail(data: { email: string }) {
+    const userResult = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, data.email))
+      .limit(1);
+    return userResult[0];
+  }
+
   async validateGoogleUser(profile: any) {
     const user = {
       id: profile.id,

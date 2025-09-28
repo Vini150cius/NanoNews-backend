@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Get,
   Post,
@@ -28,14 +29,26 @@ export class AuthController {
     }
   ) {
     if (data.password !== data.confirmPassword) {
-      throw new BadRequestException("As senhas não coincidem");
+      throw new BadRequestException("As senhas não coincidem", );
     }
 
     const passwordHash = await argon2.hash(data.password, {
       type: argon2.argon2id,
     });
 
-    const reponse = this.authService.createProfile({
+    if (!passwordHash) {
+      throw new BadRequestException("Erro ao criar o usuário, senha inválida");
+    }
+
+    const emailExists = await this.authService.verifyEmail({
+      email: data.email,
+    });
+
+    if (emailExists) {
+      throw new ConflictException("Email já cadastrado");
+    }
+
+    const reponse = await this.authService.createProfile({
       email: data.email,
       name: data.name,
       picture: "",
