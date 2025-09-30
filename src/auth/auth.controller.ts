@@ -6,13 +6,13 @@ import {
   Get,
   Post,
   Req,
-  UnauthorizedException,
+  Res,
   UseGuards,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { AuthGuard } from "@nestjs/passport";
 import argon2 from "argon2";
-import { response } from "express";
+import type { Response } from "express";
 
 @Controller("auth")
 export class AuthController {
@@ -29,7 +29,7 @@ export class AuthController {
     }
   ) {
     if (data.password !== data.confirmPassword) {
-      throw new BadRequestException("As senhas não coincidem", );
+      throw new BadRequestException("As senhas não coincidem");
     }
 
     const passwordHash = await argon2.hash(data.password, {
@@ -48,51 +48,81 @@ export class AuthController {
       throw new ConflictException("Email já cadastrado");
     }
 
-    const reponse = await this.authService.createProfile({
+    const response = await this.authService.createProfile({
       email: data.email,
       name: data.name,
       picture: "",
       password: passwordHash,
     });
 
-    if (!reponse) {
+    if (!response) {
       throw new BadRequestException("Erro ao criar o usuário");
     }
 
-    return { message: "Usuário criado com sucesso", reponse };
+    return { message: "Usuário criado com sucesso", response };
   }
 
-  @Get()
-  async getProfile(@Body() data: { email: string; password: string }) {
+  @Post("login")
+  async login(@Body() data: { email: string; password: string }) {
     try {
-      const reponse = await this.authService.getProfile({
+      const response = await this.authService.getProfile({
         email: data.email,
         password: data.password,
       });
 
-      if (!reponse) {
+      if (!response) {
         throw new BadRequestException("Erro ao autenticar o usuário");
       }
 
-      if (response.statusCode === 401) {
-        throw new UnauthorizedException("Credenciais inválidas");
-      }
+      const token = await this.authService.generateJwtToken({
+        sub: response.id,
+        email: response.email,
+        name: response.name,
+      });
 
-      return { message: "Usuário autenticado com sucesso", reponse };
+      return {
+        message: "Usuário autenticado com sucesso",
+        user: response,
+        accessToken: token,
+      };
     } catch (error) {
       console.log(error);
-      throw new BadRequestException("Erro ao autenticar o usuário");
+      throw new BadRequestException("Credenciais inválidas");
     }
   }
 
-  // Google
   @Get("google")
   @UseGuards(AuthGuard("google"))
-  async googleAuth() {}
+  async googleAuth() { }
 
   @Get("google/redirect")
   @UseGuards(AuthGuard("google"))
-  googleAuthRedirect(@Req() req) {
-    return req.user;
+  async googleAuthRedirect(@Req() req: any, @Res() res: Response) {
+    try {
+      const googleUser = req.user;
+
+      const result = await this.authService.handleGoogleLogin(googleUser);
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      res.redirect(`${frontendUrl}`);
+      // res.redirect(
+      //   `${frontendUrl}/auth/callback?token=${
+      //     result.accessToken
+      //   }&user=${encodeURIComponent(JSON.stringify(result.user))}`
+      // );
+    } catch (error) {
+      console.error("Erro no Google OAuth:", error);
+      res.redirect(
+        `${process.env.FRONTEND_URL || "http://localhost:3000"}/auth/error`
+      );
+    }
+  }
+
+  @Get("me")
+  @UseGuards(AuthGuard("jwt"))
+  async getMe(@Req() req: any) {
+    return {
+      message: "Usuário autenticado",
+      user: req.user,
+    };
   }
 }
