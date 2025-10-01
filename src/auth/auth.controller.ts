@@ -7,6 +7,7 @@ import {
   Post,
   Req,
   Res,
+  UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
@@ -71,7 +72,7 @@ export class AuthController {
       });
 
       if (!response) {
-        throw new BadRequestException("Erro ao autenticar o usuário");
+        throw new UnauthorizedException("Erro ao autenticar o usuário");
       }
 
       const token = await this.authService.generateJwtToken({
@@ -87,13 +88,13 @@ export class AuthController {
       };
     } catch (error) {
       console.log(error);
-      throw new BadRequestException("Credenciais inválidas");
+      throw new UnauthorizedException("Credenciais inválidas");
     }
   }
 
   @Get("google")
   @UseGuards(AuthGuard("google"))
-  async googleAuth() { }
+  async googleAuth() {}
 
   @Get("google/redirect")
   @UseGuards(AuthGuard("google"))
@@ -103,12 +104,12 @@ export class AuthController {
 
       const result = await this.authService.handleGoogleLogin(googleUser);
       const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-      res.redirect(`${frontendUrl}`);
-      // res.redirect(
-      //   `${frontendUrl}/auth/callback?token=${
-      //     result.accessToken
-      //   }&user=${encodeURIComponent(JSON.stringify(result.user))}`
-      // );
+      // res.redirect(`${frontendUrl}`);
+      res.redirect(
+        `${frontendUrl}/auth/callback?token=${
+          result.accessToken
+        }&user=${encodeURIComponent(JSON.stringify(result.user))}`
+      );
     } catch (error) {
       console.error("Erro no Google OAuth:", error);
       res.redirect(
