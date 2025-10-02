@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "dev": "concurrently \"npx drizzle-kit studio\" \"nest start --watch\"",
+    "db:seed": "tsx -r dotenv/config src/db/seed.ts",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -31,6 +32,7 @@
     "argon2": "^0.44.0",
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.44.5",
+    "drizzle-seed": "^0.3.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
